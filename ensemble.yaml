@@ -1,0 +1,16 @@
+# Define parameter values to use for ensemble.
+
+template: my_template
+
+namelists:
+    ice/cice_in.nml:
+        shortwave_nml:
+            albicei: [ .3, .5, .7 ]
+            albicev: [ ]
+        dynamics_nml:
+            angle: [ ] # NB: special name used to specify cosw, sinw
+            dragio: [ ]
+    ocean/input.nml:
+        auscom_ice_nml:
+            aice_cutoff: [ ]
+
