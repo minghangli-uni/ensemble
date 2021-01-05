@@ -2,13 +2,15 @@
 
 template: test/1deg_jra55_iaf
 
+runfrom: restart123
+
 namelists:
     ice/cice_in.nml:
         shortwave_nml:
             albicei: [ .3, .5, .7 ]
             albicev: [ ]
         dynamics_nml:
-            turning_angle: [ ] # NB: special name used to specify cosw, sinw
+            turning_angle: [ -90, 0, 1.23, 90 ] # NB: special name used to specify cosw, sinw
             dragio: [ ]
     ocean/input.nml:
         auscom_ice_nml:
