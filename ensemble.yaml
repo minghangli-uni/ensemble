@@ -1,6 +1,6 @@
 # Define parameter values to use for ensemble.
 
-template: my_template
+template: test/1deg_jra55_iaf
 
 namelists:
     ice/cice_in.nml:
