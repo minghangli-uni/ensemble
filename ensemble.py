@@ -13,6 +13,7 @@ from __future__ import print_function
 import os
 import subprocess
 import git
+import numpy as np
 # import glob  # BUG: fails if payu module loaded - some sort of module clash with re
 # import itertools
 try:
@@ -32,6 +33,7 @@ def ensemble(yamlfile='ensemble.yaml'):
     # could loop over all values of all parameters using `itertools.product` - see https://stackoverflow.com/questions/1280667/in-python-is-there-an-easier-way-to-write-6-nested-for-loops
     indata = yaml.load(open(yamlfile, 'r'), Loader=yaml.SafeLoader)
     template = indata['template']
+    templaterepo = git.Repo(template)
     print(indata)
     for fname, nmls in indata['namelists'].items():
         for group, names in nmls.items():
@@ -43,11 +45,15 @@ def ensemble(yamlfile='ensemble.yaml'):
                         print(expname, 'exists; skipping')
                     else:
                         print('creating', expname)
-                        # TODO: clone template to expname
-                        # git.clone
+                        exprepo = templaterepo.clone(expname)
+                        # TODO: fix up remotes, set up new branch
                         fpath = os.path.join(expname, fname)
-                        
-                        # f90nml.patch(fpath, {group: {name: v}}) #, fpath)
+                        if set(fname, group, name) == set('ice/cice_in.nml', 'dynamics_nml', 'turning_angle'):
+                            f90nml.patch(fpath, {group: {'cosw': np.cos(v * np.pi / 180. )}})
+                            f90nml.patch(fpath, {group: {'sinw': np.sin(v * np.pi / 180. )}})
+                        else:
+                            f90nml.patch(fpath, {group: {name: v}}) #, fpath)
+                        # TODO: commit changes
                         
                         # with open(fname) as nml_file:
                         #     nml = f90nml.read(nml_file)

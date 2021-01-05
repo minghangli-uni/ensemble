@@ -8,7 +8,7 @@ namelists:
             albicei: [ .3, .5, .7 ]
             albicev: [ ]
         dynamics_nml:
-            angle: [ ] # NB: special name used to specify cosw, sinw
+            turning_angle: [ ] # NB: special name used to specify cosw, sinw
             dragio: [ ]
     ocean/input.nml:
         auscom_ice_nml:
