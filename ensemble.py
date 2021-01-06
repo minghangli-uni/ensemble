@@ -117,9 +117,9 @@ def ensemble(yamlfile='ensemble.yaml'):
 
                                     if indata['startfrom'] != 'rest':
                                         # create archive symlinks to restart and output initial conditions
-                                        subprocess.run('cd '+exppath+' && payu setup', check=True, shell=True)
+                                        subprocess.run('cd '+exppath+' && payu sweep && payu setup', check=True, shell=True)
                                         # payu setup creates work symlink but not archive -- so derive archive from work dest
-                                        workpath = os.path.realpath(os.path.join(template, 'work'))
+                                        workpath = os.path.realpath(os.path.join(exppath, 'work'))
                                         archivepath = workpath.replace('/work/', '/archive')
                                         if os.path.exists(archivepath):
                                             print(' *** deleting', relexppath, '- archive', archivepath, 'already exists')
