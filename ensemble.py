@@ -113,22 +113,31 @@ def ensemble(yamlfile='ensemble.yaml'):
                                     # fix up git remotes, set up new branch
                                     exprepo.remotes.origin.rename('source')
                                     exprepo.create_remote('origin', templaterepo.remotes.origin.url)
-                                    exprepo.git.checkout('HEAD', b=expname) # switch to a new branch
+                                    exprepo.git.checkout('HEAD', b=expname)  # switch to a new branch
 
                                     if indata['startfrom'] != 'rest':
                                         # create archive symlinks to restart and output initial conditions
-                                        subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
+                                        subprocess.run('cd '+exppath+' && payu setup', check=True, shell=True)
+                                        # payu setup creates work symlink but not archive -- so derive archive from work dest
+                                        workpath = os.path.realpath(os.path.join(template, 'work'))
+                                        archivepath = workpath.replace('/work/', '/archive')
+                                        if os.path.exists(archivepath):
+                                            print(' *** deleting', relexppath, '- archive', archivepath, 'already exists')
+                                            shutil.rmtree(exppath)
+                                            continue
+                                        else:
+                                            os.makedirs(archivepath)
+                                            os.symlink(archivepath, os.path.join(exppath, 'archive'))
+                                            dpar = os.path.join('archive', 'output'+str(indata['startfrom']))
+                                            d = os.path.join(dpar, 'ice')
+                                            os.mkdir(os.path.join(exppath, dpar))
+                                            os.mkdir(os.path.join(exppath, d))
+                                            shutil.copy(os.path.join(template, d, 'cice_in.nml'),
+                                                        os.path.join(exppath, d))
 
-                                        dpar = os.path.join('archive', 'output'+str(indata['startfrom']))
-                                        d = os.path.join(dpar, 'ice')
-                                        os.mkdir(os.path.join(exppath, dpar))
-                                        os.mkdir(os.path.join(exppath, d))
-                                        shutil.copy(os.path.join(template, d, 'cice_in.nml'),
-                                                    os.path.join(exppath, d))
-
-                                        d = os.path.join('archive', 'restart'+str(indata['startfrom']))
-                                        restartpath = os.path.realpath(os.path.join(template, d))
-                                        os.symlink(restartpath, os.path.join(exppath, d))
+                                            d = os.path.join('archive', 'restart'+str(indata['startfrom']))
+                                            restartpath = os.path.realpath(os.path.join(template, d))
+                                            os.symlink(restartpath, os.path.join(exppath, d))
 
                                     # set jobname in config.yaml to expname
                                     # don't use yaml package as it doesn't preserve comments
@@ -146,11 +155,11 @@ def ensemble(yamlfile='ensemble.yaml'):
                                     metadata = yaml.load(open(os.path.join(exppath, 'metadata.yaml'), 'r'), Loader=yaml.SafeLoader)
                                     desc = metadata['description']
                                     desc += '\nNOTE: this is a perturbation experiment, but the description above is for the control run.'
-                                    desc += '\nThis perturbation experiment is based on the control run ' + str(templatepath)
+                                    desc += '\nThis perturbation experiment is based on the control run ' + templatepath
                                     if indata['startfrom'] == 'rest':
                                         desc += '\nbut with condition of rest'
                                     else:
-                                        desc += '\nbut with initial condition ' + str(restartpath)
+                                        desc += '\nbut with initial condition ' + restartpath
                                     if turningangle:
                                         desc += '\nand ' + ' -> '.join([fname, group, 'cosw and sinw']) +\
                                             ' changed to give a turning angle of ' + str(v) + ' degrees.'
@@ -176,9 +185,9 @@ def ensemble(yamlfile='ensemble.yaml'):
 
 # count existing runs and do additional runs if needed
     for exppath in ensemble:
-        newruns = indata['nruns'] - max(1, len(glob.glob(os.path.join(exppath, 'archive', 'restart*')))) + 1
+        newruns = indata['nruns'] - max(1, len(glob.glob(os.path.join(exppath, 'archive', 'output[0-9][0-9][0-9]*')))) + 1
         if newruns > 0:
-            cmd = 'cd '+exppath+' && payu run -n '+str(newruns)
+            cmd = 'cd ' + exppath + ' && payu sweep && payu run -n ' + str(newruns)
             print(cmd)
             subprocess.run(cmd, check=True, shell=True)
 
