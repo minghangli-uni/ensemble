@@ -9,14 +9,12 @@ Apache 2.0 License http://www.apache.org/licenses/LICENSE-2.0.txt
 """
 
 from __future__ import print_function
-# import sys
 import os
 import shutil
-# import subprocess
 import git
 import numpy as np
-import glob  # BUG: fails if payu module loaded - some sort of module clash with re
-# import itertools
+import glob
+import subprocess
 try:
     import yaml
     import f90nml  # from https://f90nml.readthedocs.io/en/latest/
@@ -26,15 +24,35 @@ except ImportError:  # BUG: don't get this exception if payu module loaded, even
     print('   module use /g/data/hh5/public/modules; module load conda/analysis3\n')
     raise
 
+# ======================================================
+# from https://gist.github.com/paulkernstock/6df1c7ad37fd71b1da3cb05e70b9f522
+from yaml.representer import SafeRepresenter
+
+class LiteralString(str):
+    pass
+
+
+def change_style(style, representer):
+    def new_representer(dumper, data):
+        scalar = representer(dumper, data)
+        scalar.style = style
+        return scalar
+    return new_representer
+
+represent_literal_str = change_style('|', SafeRepresenter.represent_str)
+yaml.add_representer(LiteralString, represent_literal_str)
+# ======================================================
 
 def ensemble(yamlfile='ensemble.yaml'):
     '''
-    Create an ensemble by varying only one parameter at a time.
+    Create and run an ensemble by varying only one parameter at a time.
     '''
     # alternatively, could loop over all values of all parameters using `itertools.product` - see https://stackoverflow.com/questions/1280667/in-python-is-there-an-easier-way-to-write-6-nested-for-loops
     indata = yaml.load(open(yamlfile, 'r'), Loader=yaml.SafeLoader)
     template = indata['template']
-    templaterepo = git.Repo(template)
+    templatepath = os.path.join(os.getcwd(), template)
+    templaterepo = git.Repo(templatepath)
+    ensemble = []  # paths to ensemble members
     for fname, nmls in indata['namelists'].items():
         for group, names in nmls.items():
             for name, values in names.items():
@@ -43,70 +61,122 @@ def ensemble(yamlfile='ensemble.yaml'):
                     relexppath = os.path.relpath(exppath, os.getcwd())
                     expname = os.path.basename(relexppath)
                     if os.path.exists(exppath):
-                        print(' -- skipping', relexppath, '- already exists')
+                        print(' -- not creating', relexppath, '- already exists')
+                        ensemble.append(exppath)
                     else:
-                        print('creating', relexppath)
-                        exprepo = templaterepo.clone(exppath)
-                        fpath = os.path.join(exppath, fname)
-                        if set([fname, group, name]) == set(['ice/cice_in.nml', 'dynamics_nml', 'turning_angle']):
-                            f90nml.patch(fpath, {group: {'cosw': np.cos(v * np.pi / 180. )}}, fpath+'_tmp2')
-                            f90nml.patch(fpath+'_tmp2', {group: {'sinw': np.sin(v * np.pi / 180. )}}, fpath+'_tmp')
-                            os.remove(fpath+'_tmp2')
-                        else:  # general case
-                            f90nml.patch(fpath, {group: {name: v}}, fpath+'_tmp')
-                        os.rename(fpath+'_tmp', fpath)
-                        if not exprepo.is_dirty():
-                            print(' *** deleting', relexppath, '- parameters are identical to', template)
-                            shutil.rmtree(exppath)
+                        turningangle = set([fname, group, name]) == set(['ice/cice_in.nml', 'dynamics_nml', 'turning_angle'])
+                        # first check whether this set of parameters differs from template
+                        with open(os.path.join(templatepath, fname)) as template_nml_file:
+                            nml = f90nml.read(template_nml_file)
+                            if turningangle:
+                                cosw = np.cos(v * np.pi / 180.)
+                                sinw = np.sin(v * np.pi / 180.)
+                                skip = nml[group]['cosw'] == cosw \
+                                   and nml[group]['sinw'] == sinw
+                            else:
+                                skip = nml[group][name] == v
+                        if skip:
+                            print(' -- not creating', relexppath, '- parameters are identical to', template)
                         else:
-                            # TODO:
-                            # - update metadata.yaml
-                            # mkdir /scratch/x77/aek156/access-om2/archive/01deg_jra55v140_iaf_cycle3
-                            # ln -s /scratch/x77/aek156/access-om2/archive/01deg_jra55v140_iaf_cycle3 archive
-                            # cp -r /scratch/x77/aek156/access-om2/archive/01deg_jra55v140_iaf_cycle2/restart487 archive/restart487
-                            # ln -s /scratch/x77/aek156/access-om2/archive/01deg_jra55v140_iaf_cycle2/output487 archive/output487
+                            print('creating', relexppath)
+                            exprepo = templaterepo.clone(exppath)
+                            fpath = os.path.join(exppath, fname)
+                            if turningangle:
+                                f90nml.patch(fpath, {group: {'cosw': cosw}}, fpath+'_tmp2')
+                                f90nml.patch(fpath+'_tmp2', {group: {'sinw': sinw}}, fpath+'_tmp')
+                                os.remove(fpath+'_tmp2')
+                            else:  # general case
+                                f90nml.patch(fpath, {group: {name: v}}, fpath+'_tmp')
+                            os.rename(fpath+'_tmp', fpath)
 
-                            # set SYNCDIR in sync_data.sh
-                            sdpath = os.path.join(exppath, 'sync_data.sh')
-                            with open(sdpath+'_tmp', 'w') as wf:
-                                with open(sdpath, 'r') as rf:
-                                    for line in rf:
-                                        if line.startswith('SYNCDIR='):
-                                            syncbase = os.path.dirname(line[len('SYNCDIR='):])
-                                            syncdir = os.path.join(syncbase, expname)
-                                            wf.write('SYNCDIR='+syncdir+'\n')
-                                        else:
-                                            wf.write(line)
-                            os.rename(sdpath+'_tmp', sdpath)
-
-                            if os.path.exists(syncdir):
-                                print(' *** deleting', relexppath, '- SYNCDIR', syncdir, 'already exists')
+                            if not exprepo.is_dirty():  # additional check in case of roundoff
+                                print(' *** deleting', relexppath, '- parameters are identical to', template)
                                 shutil.rmtree(exppath)
                             else:
-
-                                # set jobname in config.yaml to '_'.join([name, str(v)])
-                                # don't use yaml package as it doesn't preserve comments and ordering
-                                configpath = os.path.join(exppath, 'config.yaml')
-                                with open(configpath+'_tmp', 'w') as wf:
-                                    with open(configpath, 'r') as rf:
+                                # set SYNCDIR in sync_data.sh
+                                sdpath = os.path.join(exppath, 'sync_data.sh')
+                                with open(sdpath+'_tmp', 'w') as wf:
+                                    with open(sdpath, 'r') as rf:
                                         for line in rf:
-                                            if line.startswith('jobname:'):
-                                                wf.write('jobname: '+'_'.join([name, str(v)])+'\n')
+                                            if line.startswith('SYNCDIR='):
+                                                syncbase = os.path.dirname(line[len('SYNCDIR='):])
+                                                syncdir = os.path.join(syncbase, expname)
+                                                wf.write('SYNCDIR='+syncdir+'\n')
                                             else:
                                                 wf.write(line)
-                                os.rename(configpath+'_tmp', configpath)
+                                os.rename(sdpath+'_tmp', sdpath)
 
-# TODO: finish this bit
-                                runfrom = os.path.join(os.path.realpath(os.path.join(template, 'archive')), indata['runfrom'])
-                                print(runfrom)
-                                for f in glob.glob(os.path.join(exppath, 'run_summary_*.csv')):
-                                    exprepo.git.rm(os.path.basename(f))
+                                if os.path.exists(syncdir):
+                                    print(' *** deleting', relexppath, '- SYNCDIR', syncdir, 'already exists')
+                                    shutil.rmtree(exppath)
+                                else:
+                                    # fix up git remotes, set up new branch
+                                    exprepo.remotes.origin.rename('source')
+                                    exprepo.create_remote('origin', templaterepo.remotes.origin.url)
+                                    exprepo.git.checkout('HEAD', b=expname) # switch to a new branch
 
-                            # fix up remotes, set up new branch, commit
-                                exprepo.remotes.origin.rename('source')
-                                exprepo.create_remote('origin', templaterepo.remotes.origin.url)
-                                exprepo.git.checkout('HEAD', b=expname) # switch to a new branch
-                                # exprepo.git.commit(a=True, m='set up '+expname)
+                                    if indata['startfrom'] != 'rest':
+                                        # create archive symlinks to restart and output initial conditions
+                                        p = subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
+
+                                        d = os.path.join('archive', 'output'+str(indata['startfrom']), 'ice')
+                                        os.makedirs(os.path.join(exppath, d))
+                                        shutil.copy(os.path.join(template, d, 'cice_in.nml'),
+                                                    os.path.join(exppath, d))
+
+                                        d = os.path.join('archive', 'restart'+str(indata['startfrom']))
+                                        restartpath = os.path.realpath(os.path.join(template, d))
+                                        os.symlink(restartpath, os.path.join(exppath, d))
+
+                                    # set jobname in config.yaml to expname
+                                    # don't use yaml package as it doesn't preserve comments
+                                    configpath = os.path.join(exppath, 'config.yaml')
+                                    with open(configpath+'_tmp', 'w') as wf:
+                                        with open(configpath, 'r') as rf:
+                                            for line in rf:
+                                                if line.startswith('jobname:'):
+                                                    wf.write('jobname: '+expname+'\n')
+                                                else:
+                                                    wf.write(line)
+                                    os.rename(configpath+'_tmp', configpath)
+
+                                    # update metadata
+                                    metadata = yaml.load(open(os.path.join(exppath, 'metadata.yaml'), 'r'), Loader=yaml.SafeLoader)
+                                    desc = metadata['description']
+                                    desc += '\nNOTE: this is a perturbation experiment, but the description above is for the control run.'
+                                    desc += '\nThis perturbation experiment is based on the control run ' + str(templatepath)
+                                    if indata['startfrom'] == 'rest':
+                                        desc += '\nbut with condition of rest'
+                                    else:
+                                        desc += '\nbut with initial condition ' + str(restartpath)
+                                    if turningangle:
+                                        desc += '\nand ' + ' -> '.join([fname, group, 'cosw and sinw']) +\
+                                            ' changed to give a turning angle of ' + str(v) + ' degrees.'
+                                    else:
+                                        desc += '\nand ' + ' -> '.join([fname, group, name]) +\
+                                            ' changed to ' + str(v)
+                                    metadata['description'] = LiteralString(desc)
+                                    metadata['notes'] = LiteralString(metadata['notes'])
+                                    metadata['keywords'] += ['perturbation', name]
+                                    if turningangle:
+                                        metadata['keywords'] += ['cosw', 'sinw']
+                                    with open(os.path.join(exppath, 'metadata.yaml'), 'w') as f:
+                                        yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
+
+                                    # remove run_summary_*.csv
+                                    for f in glob.glob(os.path.join(exppath, 'run_summary_*.csv')):
+                                        exprepo.git.rm(os.path.basename(f))
+
+                                    # commit
+                                    exprepo.git.commit(a=True, m='set up '+expname)
+
+                                    ensemble.append(exppath)
+
+# count existing runs and do additional runs if needed
+    for exppath in ensemble:
+        newruns = indata['nruns'] - max(1, len(glob.glob(os.path.join(exppath, 'archive', 'restart*')))) + 1
+        if newruns > 0:
+            print('doing payu run -n', newruns, 'in', exppath)
 
 
 if __name__ == '__main__':

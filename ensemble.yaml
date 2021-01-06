@@ -1,13 +1,15 @@
 # Define parameter values to use for ensemble.
 
-template: test/1deg_jra55_iaf
+template: test/1deg_jra55_iaf # relative path to a control experiment
 
-runfrom: restart123
+startfrom: 123 # if integer: control experiment restart to begin perturbation experiments from; or use 'rest' to start from rest
+
+nruns: 2 # total number of payu runs of each ensemble member
 
 namelists:
     ice/cice_in.nml:
         shortwave_nml:
-            albicei: [ .3, .5, .7 ]
+            albicei: [ .3, .44, .5, .7 ]
             albicev: [ ]
         dynamics_nml:
             turning_angle: [ -90, 0, 1.23, 90 ] # NB: special name used to specify cosw, sinw
