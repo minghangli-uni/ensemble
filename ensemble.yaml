@@ -1,20 +1,19 @@
-# Define parameter values to use for ensemble.
+# parameters for ensemble.py
 
-template: test/1deg_jra55_iaf # relative path to a control experiment
+template: test/1deg_jra55_iaf  # relative path to a control experiment
 
-startfrom: 123 # if integer: control experiment restart to begin perturbation experiments from; or use 'rest' to start from rest
+startfrom: 123  # if integer: control experiment restart to begin perturbation experiments from; or use 'rest' to start from rest
 
-nruns: 2 # total number of payu runs of each ensemble member
+nruns: 0  # total number of payu runs of each ensemble member
 
-namelists:
+namelists:  # parameter values to use for ensemble.
     ice/cice_in.nml:
         shortwave_nml:
-            albicei: [ .3, .44, .5, .7 ]
+            albicei: [ .3, .44, .5 ]
             albicev: [ ]
         dynamics_nml:
-            turning_angle: [ -90, 0, 1.23, 90 ] # NB: special name used to specify cosw, sinw
+            turning_angle: [ -90, 0, 90 ] # NB: special name used to specify cosw, sinw
             dragio: [ ]
     ocean/input.nml:
         auscom_ice_nml:
             aice_cutoff: [ ]
-

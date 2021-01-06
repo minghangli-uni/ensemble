@@ -120,7 +120,8 @@ def ensemble(yamlfile='ensemble.yaml'):
                                         subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
 
                                         d = os.path.join('archive', 'output'+str(indata['startfrom']), 'ice')
-                                        os.makedirs(os.path.join(exppath, d))
+                                        os.mkdir(os.path.join(exppath, d, os.pardir))
+                                        os.mkdir(os.path.join(exppath, d))
                                         shutil.copy(os.path.join(template, d, 'cice_in.nml'),
                                                     os.path.join(exppath, d))
 
