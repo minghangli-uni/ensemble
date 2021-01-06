@@ -119,8 +119,9 @@ def ensemble(yamlfile='ensemble.yaml'):
                                         # create archive symlinks to restart and output initial conditions
                                         subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
 
-                                        d = os.path.join('archive', 'output'+str(indata['startfrom']), 'ice')
-                                        os.mkdir(os.path.join(exppath, d, os.pardir))
+                                        dpar = os.path.join('archive', 'output'+str(indata['startfrom']))
+                                        d = os.path.join(dpar, 'ice')
+                                        os.mkdir(os.path.join(exppath, dpar))
                                         os.mkdir(os.path.join(exppath, d))
                                         shutil.copy(os.path.join(template, d, 'cice_in.nml'),
                                                     os.path.join(exppath, d))
