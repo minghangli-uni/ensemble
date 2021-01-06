@@ -117,7 +117,7 @@ def ensemble(yamlfile='ensemble.yaml'):
 
                                     if indata['startfrom'] != 'rest':
                                         # create archive symlinks to restart and output initial conditions
-                                        p = subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
+                                        subprocess.run('cd '+exppath+' && payu setup && payu sweep', check=True, shell=True)
 
                                         d = os.path.join('archive', 'output'+str(indata['startfrom']), 'ice')
                                         os.makedirs(os.path.join(exppath, d))
@@ -176,7 +176,9 @@ def ensemble(yamlfile='ensemble.yaml'):
     for exppath in ensemble:
         newruns = indata['nruns'] - max(1, len(glob.glob(os.path.join(exppath, 'archive', 'restart*')))) + 1
         if newruns > 0:
-            print('doing payu run -n', newruns, 'in', exppath)
+            cmd = 'cd '+exppath+' && payu run -n '+str(newruns)
+            print(cmd)
+            subprocess.run(cmd, check=True, shell=True)
 
 
 if __name__ == '__main__':
