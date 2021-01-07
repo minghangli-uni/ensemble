@@ -113,14 +113,15 @@ def ensemble(yamlfile='ensemble.yaml'):
                                     # fix up git remotes, set up new branch
                                     exprepo.remotes.origin.rename('source')
                                     exprepo.create_remote('origin', templaterepo.remotes.origin.url)
+            # TODO: first checkout commit corresponding to restart?
                                     exprepo.git.checkout('HEAD', b=expname)  # switch to a new branch
 
                                     if indata['startfrom'] != 'rest':
                                         # create archive symlinks to restart and output initial conditions
                                         subprocess.run('cd '+exppath+' && payu sweep && payu setup', check=True, shell=True)
-                                        # payu setup creates work symlink but not archive -- so derive archive from work dest
+                                        # payu setup creates work symlink but not archive, so derive archive from work dest
                                         workpath = os.path.realpath(os.path.join(exppath, 'work'))
-                                        archivepath = workpath.replace('/work/', '/archive')
+                                        archivepath = workpath.replace('/work/', '/archive/')
                                         if os.path.exists(archivepath):
                                             print(' *** deleting', relexppath, '- archive', archivepath, 'already exists')
                                             shutil.rmtree(exppath)
