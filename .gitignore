@@ -1,4 +1,6 @@
 test/1deg_jra55_iaf_*
+test/archive/1deg_jra55_iaf_*
+test/work
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
