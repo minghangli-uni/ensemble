@@ -45,7 +45,7 @@ yaml.add_representer(LiteralString, represent_literal_str)
 # ======================================================
 
 
-def ensemble(yamlfile='ensemble.yaml'):
+def ensemble(yamlfile='ensemble.yaml', test=False):
     """
     Create and run an ensemble by varying only one parameter at a time.
     """
@@ -127,14 +127,19 @@ def ensemble(yamlfile='ensemble.yaml'):
                     if indata['startfrom'] != 'rest':
 
                         # create archive symlink
-                        if True:
+                        if not test:
                             subprocess.run('cd ' + exppath + ' && payu sweep && payu setup', check=True, shell=True)
+                            workpath = os.path.realpath(os.path.join(exppath, 'work'))
+                            subprocess.run('cd ' + exppath + ' && payu sweep', check=True, shell=True)
                         else:  # simulate effect of payu setup (for testing without payu)
                             workpath = os.path.realpath(os.path.join('test', 'work', expname))
                             os.makedirs(workpath)
                             os.symlink(workpath, os.path.join(exppath, 'work'))
                             archivepath = workpath.replace('/work/', '/archive/')
                             os.makedirs(archivepath)
+                            workpath = os.path.realpath(os.path.join(exppath, 'work'))
+                            os.remove(os.path.join(exppath, 'work'))
+                            shutil.rmtree(workpath)
                             # also make template restart symlink if it doesn't exist
                             if template == 'test/1deg_jra55_iaf':  # e.g. testing fresh clone
                                 templatearchive = os.path.join(templatepath, 'archive')
@@ -142,7 +147,6 @@ def ensemble(yamlfile='ensemble.yaml'):
                                     os.symlink(archivepath.replace(expname, os.path.basename(template)), templatearchive)
                         # payu setup creates archive dir but not symlink,
                         # so infer archive path from work dest and link to it
-                        workpath = os.path.realpath(os.path.join(exppath, 'work'))
                         archivepath = workpath.replace('/work/', '/archive/')
                         if glob.glob(os.path.join(archivepath, 'output*')) +\
                            glob.glob(os.path.join(archivepath, 'restart*')):
@@ -213,6 +217,8 @@ def ensemble(yamlfile='ensemble.yaml'):
             newruns = indata['nruns'] - doneruns
             if newruns > 0:
                 cmd = 'cd ' + exppath + ' && payu sweep && payu run -n ' + str(newruns)
+                if test:
+                    cmd = '# ' + cmd
                 print('\n'+cmd)
                 subprocess.run(cmd, check=True, shell=True)
             else:
@@ -228,6 +234,10 @@ if __name__ == '__main__':
     parser.add_argument('yamlfile', metavar='yamlfile', type=str, nargs='?',
                         default='ensemble.yaml',
                         help='YAML file specifying parameter values to use for ensemble; default is ensemble.yaml')
+    parser.add_argument('--test',
+                        action='store_true', default=False,
+                        help='for testing a fresh clone, with no payu dependency')
     args = parser.parse_args()
     yamlfile = vars(args)['yamlfile']
-    ensemble(yamlfile)
+    test = vars(args)['test']
+ensemble(yamlfile, test=test)

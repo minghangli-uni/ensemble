@@ -6,6 +6,7 @@ This repo uses submodules, so should be downloaded with
 ```
 git clone --recursive https://github.com/aekiss/ensemble.git
 ```
+It also requires [payu](https://github.com/payu-org/payu) unless the `--test` option is used.
 
 ## Usage
 1. Edit `ensemble.yaml` to set:
@@ -25,3 +26,20 @@ git clone --recursive https://github.com/aekiss/ensemble.git
         - Existing perturbation directories are not altered, so `ensemble.py` can be re-run with additional perturbations.
         - Perturbations that are identical to `template` are ignored.
     - Then do `payu sweep; payu run -n X` for each existing and new perturbation directory, where `X` is the number of additional runs required to produce `nruns` output directories in total for each perturbation. Thus additional runs of an existing ensemble can be achieved simply by increasing `nruns` and running `./ensemble.py` again. Any newly-added perturbations (or crashed runs) will be run as many times as needed to match the number of outputs from the others.
+
+`ensemble.py` has some command-line options:
+```
+% ./ensemble.py -h
+usage: ensemble.py [-h] [--test] [yamlfile]
+
+Generate ensemble of ACCESS-OM2 experiments. Latest version and help:
+https://github.com/aekiss/ensemble
+
+positional arguments:
+  yamlfile    YAML file specifying parameter values to use for ensemble;
+              default is ensemble.yaml
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --test      for testing a fresh clone, with no payu dependency
+```
