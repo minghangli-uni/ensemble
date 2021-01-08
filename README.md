@@ -1,6 +1,12 @@
 # Ensemble
 Generate and run an ensemble of [ACCESS-OM2](https://github.com/COSIMA/access-om2) experiments by varying namelist parameters.
 
+## Downloading
+This repo uses submodules, so should be downloaded with
+```
+git clone --recursive https://github.com/aekiss/ensemble.git
+```
+
 ## Usage
 1. Edit `ensemble.yaml` to set:
     - `template`: relative path to control experiment configuration directory.
