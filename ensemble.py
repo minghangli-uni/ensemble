@@ -88,7 +88,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
 
                     # clone template, fix up git remotes, set up new branch
                     exprepo = templaterepo.clone(exppath)
-                    exprepo.remotes.origin.rename('source')
+                    exprepo.remotes.origin.rename('template')
                     exprepo.create_remote('origin', templaterepo.remotes.origin.url)
 # TODO: first checkout commit corresponding to restart?
                     exprepo.git.checkout('HEAD', b=expname)  # switch to a new branch
