@@ -128,7 +128,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
 
                         # create archive symlink
                         if not test:
-                            subprocess.run('cd ' + exppath + ' && payu sweep && payu setup', check=True, shell=True)
+                            subprocess.run('cd ' + exppath + ' && payu sweep && payu setup', check=False, shell=True)
                             workpath = os.path.realpath(os.path.join(exppath, 'work'))
                             subprocess.run('cd ' + exppath + ' && payu sweep', check=True, shell=True)
                         else:  # simulate effect of payu setup (for testing without payu)
@@ -216,11 +216,12 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
             doneruns = len(glob.glob(os.path.join(exppath, 'archive', 'output[0-9][0-9][0-9]*'))) - 1
             newruns = indata['nruns'] - doneruns
             if newruns > 0:
-                cmd = 'cd ' + exppath + ' && payu sweep && payu run -n ' + str(newruns)
+#                cmd = 'cd ' + exppath + ' && payu sweep && payu run -n ' + str(newruns)
+                cmd = 'cd ' + exppath + ' && payu run -n ' + str(newruns)
                 if test:
                     cmd = '# ' + cmd
                 print('\n'+cmd)
-                subprocess.run(cmd, check=True, shell=True)
+                subprocess.run(cmd, check=False, shell=True)
             else:
                 print('\n --', exppath, 'has already completed', doneruns, 'runs')
     print()
