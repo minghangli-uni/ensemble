@@ -59,7 +59,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
     for fname, nmls in indata['namelists'].items():
         for group, names in nmls.items():
             for name, values in names.items():
-                turningangle = set([fname, group, name]) == set(['ice/cice_in.nml', 'dynamics_nml', 'turning_angle'])
+                turningangle = [fname, group, name] == ['ice/cice_in.nml', 'dynamics_nml', 'turning_angle']
                 for v in values:
                     exppath = os.path.join(os.getcwd(), '_'.join([template, name, str(v)]))
                     relexppath = os.path.relpath(exppath, os.getcwd())
