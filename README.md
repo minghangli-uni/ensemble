@@ -14,7 +14,7 @@ It also requires [payu](https://github.com/payu-org/payu) unless the `--test` op
     - `startfrom`: restart number in `template`/archive to use as initial condition for perturbations (or `rest` to start from rest).
     - `nruns`: total number of output directories to generate for each ensemble member.
     - `namelists`: specify lists of perturbation values to use.
-        - These are specified by namelist file path, group, variable name and an array of values.
+        - These are specified by namelist file path, group, variable name and an array of values. If scientific notation is used, the mantissa must include a decimal point and the exponent must include a sign (otherwise it will be read as a string - see [this issue](https://github.com/yaml/pyyaml/issues/173)).
         - Any variable name in any namelist in `template` may be used.
         - Ice turning angle should be specified by the special name `turning_angle` (with values in degrees), not `cosw` and `sinw`; this ensures that consistent `cosw` and `sinw` values will be used.
 2. Run `./ensemble.py`
