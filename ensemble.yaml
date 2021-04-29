@@ -2,7 +2,7 @@
 
 template: test/1deg_jra55_iaf  # relative path to a control experiment; perturbations are based on the latest commit to the current branch
 
-startfrom: 123  # if integer: restart number of control experiment to use as initial condition for perturbation experiments; or use 'rest' to start perturbations from rest
+startfrom: 4  # if integer: restart number of control experiment to use as initial condition for perturbation experiments; or use 'rest' to start perturbations from rest
 
 nruns: 0  # total number of output directories to generate for each ensemble member
 

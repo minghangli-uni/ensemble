@@ -55,6 +55,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
     template = indata['template']
     templatepath = os.path.join(os.getcwd(), template)
     templaterepo = git.Repo(templatepath)
+    startfrom = str(indata['startfrom']).strip().lower().zfill(3)
     ensemble = []  # paths to ensemble members
     for fname, nmls in indata['namelists'].items():
         for group, names in nmls.items():
@@ -124,7 +125,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
                         shutil.rmtree(exppath)
                         continue
 
-                    if indata['startfrom'] != 'rest':
+                    if startfrom != 'rest':
 
                         # create archive symlink
                         if not test:
@@ -156,12 +157,12 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
                         os.symlink(archivepath, os.path.join(exppath, 'archive'))
 
                         # symlink restart initial conditions
-                        d = os.path.join('archive', 'restart'+str(indata['startfrom']))
+                        d = os.path.join('archive', 'restart'+startfrom)
                         restartpath = os.path.realpath(os.path.join(template, d))
                         os.symlink(restartpath, os.path.join(exppath, d))
 
                         # copy template/output[startfrom]/ice/cice_in.nml
-                        d = os.path.join('archive', 'output'+str(indata['startfrom']), 'ice')
+                        d = os.path.join('archive', 'output'+startfrom, 'ice')
                         os.makedirs(os.path.join(exppath, d))
                         shutil.copy(os.path.join(template, d, 'cice_in.nml'),
                                     os.path.join(exppath, d))
@@ -183,7 +184,7 @@ def ensemble(yamlfile='ensemble.yaml', test=False):
                     desc = metadata['description']
                     desc += '\nNOTE: this is a perturbation experiment, but the description above is for the control run.'
                     desc += '\nThis perturbation experiment is based on the control run ' + templatepath
-                    if indata['startfrom'] == 'rest':
+                    if startfrom == 'rest':
                         desc += '\nbut with condition of rest'
                     else:
                         desc += '\nbut with initial condition ' + restartpath
