@@ -7,10 +7,13 @@ startfrom: 'rest'  # if integer: restart number of control experiment to use as 
 nruns: 0  # total number of output directories to generate for each ensemble member
 
 namelists:  # parameter values to use for ensemble
-#    ice/cice_in.nml:
-#        shortwave_nml:
-#            albicei: [ .3, .44, .5 ]
-#
-     MOM_input.nml:
-         mom6_input_nml:
-             DT: [1800.0, 3600.0, 7200.0]
+    ice/cice_in.nml:
+        shortwave_nml:
+            albicei: [ .3, .44, .5 ]
+            albicev: [ ]
+        dynamics_nml:
+            turning_angle: [ -90, 0, 90 ] # NB: special name: turning angle in degrees used to specify cosw, sinw
+            dragio: [ ]
+    ocean/input.nml:
+        auscom_ice_nml:
+            aice_cutoff: [ ]
